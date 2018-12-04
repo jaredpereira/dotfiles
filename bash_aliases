@@ -1,0 +1,6 @@
+alias ls='ls --color=auto'
+alias noise='play -n synth brownnoise synth sine amod 0.05 80'
+alias mirrorUpdate='sudo reflector --latest 10 --protocol http --protocol https --sort rate --save /etc/pacman.d/mirrorlist'
+alias lock='i3lock -i ~/media/Images/wallpaper.png'
+alias light='xrdb ~/.Xresources.light'
+alias dark='xrdb ~/.Xresources'

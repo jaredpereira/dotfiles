@@ -1,0 +1,25 @@
+! urxvt
+URxvt*buffered: true
+URxvt*cursorBlink: true
+URxvt*underlineColor: yellow
+URxvt.font:  xft:Inconsolata:antialias=true Powerline:size=12, Noto Fonts Emoji 
+URxvt*depth: 32
+URxvt*borderless: 1
+URxvt*scrollBar: false
+URxvt*loginShell: true
+Urxvt*secondaryScroll:  true    # Enable Shift-PageUp/Down in screen
+URxvt*saveLines: 5000
+URxvt*termName: rxvt-unicode
+urxvt*perl-lib:            /usr/lib/urxvt/perl/
+URxvt.perl-ext-common: default,matcher,resize-font
+URxvt*urlLauncher: /usr/bin/chromium
+URxvt.matcher.button: 1
+urxvt.saveLines: 1000000
+URxvt.resize-font.smaller: C-Down
+URxvt.resize-font.bigger: C-Up
+
+URxvt*scrollTtyOutput:      false
+URxvt*scrollWithBuffer:     true
+URxvt*scrollTtyKeypress:    true
+
+#include ".Xresources.d/colors"
