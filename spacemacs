@@ -30,7 +30,8 @@ values."
    dotspacemacs-configuration-layer-path '()
    ;; List of configuration layers to load.
    dotspacemacs-configuration-layers
-   '(lua
+   '(systemd
+     lua
      typescript
      rust
      haskell
@@ -51,6 +52,7 @@ values."
      ;; better-defaults
      emacs-lisp
      git
+     neotree
      (org :variables
           org-enable-reveal-js-support t)
      (shell :variables
@@ -64,20 +66,30 @@ values."
                        version-control-diff-tool 'git-gutter+
                        version-control-diff-side 'left
                        version-control-global-margin t)
+     (wakatime :variables
+               wakatime-api-key "7812a069-01b4-4a33-9549-49f6e3f37b73"
+               wakatime-cli-path "/usr/bin/wakatime")
      )
    ;; List of additional packages that will be installed without being
    ;; wrapped in a layer. If you need some configuration for these
    ;; packages, then consider creating a layer. You can also put the
    ;; configuration in `dotspacemacs/user-config'.
    dotspacemacs-additional-packages '(
+                                      forge
+                                      org-super-agenda
+                                      solaire-mode
+                                      doom-themes
                                       writeroom-mode
                                       keychain-environment
+                                      nov
+                                      docker-tramp
                                       solidity-mode)
    ;; A list of packages that cannot be updated.
    dotspacemacs-frozen-packages '()
    ;; A list of packages that will not be installed and loaded fer
    dotspacemacs-excluded-packages '(persp-mode
                                     tern
+                                    ;; treemacs
                                     )
    ;; Defines the behaviour of Spacemacs when installing packages.
    ;; Possible values are `used-only', `used-but-keep-unused' and `all'.
@@ -147,8 +159,8 @@ values."
    ;; List of themes, the first of the list is loaded when spacemacs starts.
    ;; Press <SPC> T n to cycle to the next theme in the list (works great
    ;; with 2 themes variants, one dark and one light)
-   dotspacemacs-themes '(sanityinc-solarized-dark
-                         sanityinc-solarized-light
+   dotspacemacs-themes '(doom-solarized-light
+                         sanityinc-solarized-dark
                          )
    ;; If non nil the cursor color matches the state color in GUI Emacs.
    dotspacemacs-colorize-cursor-according-to-state t
@@ -338,7 +350,9 @@ executes.
  This function is mostly useful for variables that need to be set
 before packages are loaded. If you are unsure, you should try in setting them in
 `dotspacemacs/user-config' first."
+
   (my-setup-indent 2)
+
   )
 
 (defun dotspacemacs/user-config ()
@@ -348,6 +362,12 @@ layers configuration.
 This is the place where most of your configurations should be done. Unless it is
 explicitly specified that a variable should be set before a package is loaded,
 you should place your code here."
+  (require 'forge)
+
+  (add-to-list 'auto-mode-alist '("\\.mdx\\'" . markdown-mode))
+  (global-wakatime-mode)
+  (global-linum-mode -1)
+  (global-display-line-numbers-mode)
   (global-company-mode)
   (global-flycheck-mode)
   (dumb-jump-mode)
@@ -361,19 +381,38 @@ you should place your code here."
 
   (add-hook 'js2-mode-hook (lambda () (electric-indent-local-mode -1)))
   (setq browse-url-browser-function 'browse-url-generic
-        browse-url-generic-program "chromium")
-  (setq tide-tsserver-executable "~/.npm-global/bin/tsserver")
+        browse-url-generic-program "firefox")
+  ;;(setq tide-tsserver-executable "~/.npm-global/bin/tsserver")
   (spaceline-toggle-org-clock-on)
   (setq display-line-numbers-width-start t)
 
   ;; Org Config
   (require 'org-habit)
-  (setq org-agenda-files( list "~/org" "~/org/projects"))
+  (require 'ox-md)
+
+  (setcar (nthcdr 4 org-emphasis-regexp-components) 5)
+  (org-set-emph-re 'org-emphasis-regexp-components org-emphasis-regexp-components)
+
+  ;; Load notes file so it's always accessible
+  (find-file-noselect "~/org/notes/")
+  (find-file-noselect "~/dev/homepage/")
+
+  (setq org-agenda-files( list "~/org" "~/org/notes" "~/org/writing" "~/org/readings"))
   (setq org-agenda-skip-deadline-prewarning-if-scheduled t)
+  (setq org-agenda-span (quote day))
+  (setq org-extend-today-until 3)
+
+  (setq org-log-into-drawer t)
+  (setq org-enforce-todo-dependencies t)
+  (setq org-agenda-dim-blocked-tasks 'invisible)
   (add-hook 'org-agenda-mode-hook
             (lambda ()
               (visual-line-mode -1)
               (toggle-truncate-lines 1)))
+
+  (advice-add 'org-agenda-quit :before 'org-save-all-org-buffers)
+  (advice-add 'org-archive-subtree :after 'org-save-all-org-buffers)
+
   (setq org-archive-location "archive/%s_archive::")
   (setq org-reveal-root "http://cdn.jsdelivr.net/reveal.js/3.0.0/")
   (setq org-confirm-babel-evaluate nil)
@@ -382,36 +421,40 @@ you should place your code here."
                              (org-agenda-files :maxlevel . 1)))
   (setq org-outline-path-complete-in-steps nil)         ; Refile in a single go
   (setq org-refile-use-outline-path 'file)              ; Show full paths for refiling
+
+  (org-super-agenda-mode)
+  (setq org-super-agenda-groups
+         '(
+           (:name "Habits"
+                  :habit t
+                  :tag "habit"
+                  )
+           (:name "Writing"
+                  :tag "writing"
+                  )
+           (:name "Fathom"
+                  :tag "fathom")
+           (:name "Personal"
+                  :tag "personal")
+           ))
+
+
   (setq org-capture-templates
     (quote
      (("l" "link" entry
        (file+headline "~/org/links.org" "Buffer")
-       "* %^L")
+       "* [[%^{url}][%^{title}]]")
       ("t" "task" entry
        (file+headline "~/org/tasks.org" "Buffer")
        "* TODO %^{title}
+  CREATED: %u
   %?")
-      ("j" "journal" entry
-       (file+olp+datetree "~/org/journal.org")
-       "* %^{title}
-  %U
-  %?")
-      ("b" "begin" entry
-       (file+olp+datetree "~/org/journal.org")
-       "* *BEGIN*
-  %U
-** State
-   %?
-** Goals
-   ")
-      ("e" "end" entry
-       (file+olp+datetree "~/org/journal.org")
-       "* *END*
-  %U
-** Reflection
-   %?
-** Next
-   ")
+      ("j" "journal" plain
+       (file+olp+datetree "~/org/journal.org" )
+       "    - %U: %?")
+      ("i" "idea" entry
+       (file+headline "~/org/notes/ideas.org" "Ideas")
+       "* %?")
       )))
   )
 
@@ -427,9 +470,12 @@ This function is called at the very end of Spacemacs initialization."
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(exec-path
+   (quote
+    ("/usr/local/sbin" "/usr/local/bin" "/usr/bin" "/usr/lib/jvm/default/bin" "/usr/bin/site_perl" "/usr/bin/vendor_perl" "/usr/bin/core_perl" "/usr/lib/emacs/26.1/x86_64-pc-linux-gnu" "/home/jared/.npm-global/bin" "/home/jared/.gem/ruby/2.5.0/bin" "~/.local/bin" "~/.cargo/bin")))
  '(package-selected-packages
    (quote
-    (yasnippet-snippets web-mode toc-org tide typescript-mode racer pytest pip-requirements paradox org-mime org-download neotree ivy-yasnippet impatient-mode hl-todo highlight-numbers google-translate git-link flyspell-correct-ivy flyspell-correct flycheck-haskell evil-surround evil-matchit editorconfig dumb-jump doom-modeline counsel-projectile company-anaconda color-theme-sanityinc-solarized cargo rust-mode anaconda-mode aggressive-indent ace-window company counsel swiper highlight smartparens flycheck helm helm-core window-purpose ivy yasnippet avy markdown-mode alert projectile magit magit-popup git-commit ghub with-editor evil hydra org-plus-contrib yapfify yaml-mode xterm-color ws-butler writeroom-mode winum which-key wgrep web-beautify volatile-highlights vmd-mode vi-tilde-fringe uuidgen use-package undo-tree treepy toml-mode tagedit symon string-inflection spinner spaceline-all-the-icons solidity-mode smex smeargle slim-mode shrink-path shell-pop scss-mode sass-mode rjsx-mode restart-emacs request rainbow-delimiters pyvenv pyenv-mode py-isort pug-mode prettier-js popwin pippel pipenv pcre2el password-generator parent-mode ox-reveal overseer orgit org-projectile org-present org-pomodoro org-bullets org-brain open-junk-file nameless multi-term move-text mmm-mode markdown-toc magit-svn magit-gitflow macrostep lorem-ipsum log4e livid-mode live-py-mode link-hint keychain-environment json-navigator json-mode js2-refactor js-doc ivy-xref ivy-purpose ivy-hydra indent-guide importmagic imenu-list hungry-delete htmlize hlint-refactor hindent highlight-parentheses highlight-indentation helm-make haskell-snippets graphql goto-chg golden-ratio gnuplot gntp gitignore-templates gitignore-mode gitconfig-mode gitattributes-mode git-timemachine git-messenger git-gutter-fringe git-gutter-fringe+ gh-md fuzzy font-lock+ flycheck-rust flycheck-pos-tip flx-ido fill-column-indicator fancy-battery eyebrowse expand-region evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-org evil-numbers evil-nerd-commenter evil-magit evil-lisp-state evil-lion evil-indent-plus evil-iedit-state evil-goggles evil-exchange evil-escape evil-ediff evil-cleverparens evil-args evil-anzu eval-sexp-fu eshell-z eshell-prompt-extras esh-help emmet-mode elisp-slime-nav eldoc-eval dotenv-mode diminish diff-hl define-word cython-mode csv-mode counsel-css company-web company-tern company-statistics company-lua company-ghci company-cabal column-enforce-mode cmm-mode clean-aindent-mode centered-cursor-mode browse-at-remote auto-yasnippet auto-highlight-symbol auto-dictionary auto-compile async ace-link ac-ispell))))
+    (systemd org-caldav yasnippet-snippets yapfify yaml-mode xterm-color ws-butler writeroom-mode winum which-key wgrep web-mode web-beautify wakatime-mode volatile-highlights vmd-mode vi-tilde-fringe uuidgen use-package treemacs-projectile treemacs-evil toml-mode toc-org tide tagedit symon string-inflection spaceline-all-the-icons solidity-mode solaire-mode smex smeargle slim-mode shell-pop scss-mode sass-mode rjsx-mode restart-emacs rainbow-delimiters racer pyvenv pytest pyenv-mode py-isort pug-mode prettier-js popwin pippel pipenv pip-requirements pcre2el password-generator paradox ox-reveal overseer orgit org-projectile org-present org-pomodoro org-mime org-gcal org-download org-bullets org-brain open-junk-file nameless multi-term move-text mmm-mode markdown-toc magit-svn magit-gitflow macrostep lorem-ipsum livid-mode live-py-mode link-hint keychain-environment json-navigator json-mode js2-refactor js-doc ivy-yasnippet ivy-xref ivy-purpose ivy-hydra indent-guide importmagic impatient-mode hungry-delete hlint-refactor hl-todo hindent highlight-parentheses highlight-numbers highlight-indentation helm-make haskell-snippets google-translate golden-ratio gnuplot gitignore-templates gitignore-mode gitconfig-mode gitattributes-mode git-timemachine git-messenger git-link git-gutter-fringe git-gutter-fringe+ gh-md fuzzy font-lock+ flyspell-correct-ivy flycheck-rust flycheck-pos-tip flycheck-haskell flx-ido fill-column-indicator fancy-battery eyebrowse expand-region evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-surround evil-org evil-numbers evil-nerd-commenter evil-matchit evil-magit evil-lisp-state evil-lion evil-indent-plus evil-iedit-state evil-goggles evil-exchange evil-escape evil-ediff evil-cleverparens evil-args evil-anzu eval-sexp-fu eshell-z eshell-prompt-extras esh-help emmet-mode elisp-slime-nav editorconfig dumb-jump dotenv-mode doom-themes doom-modeline diminish diff-hl define-word cython-mode csv-mode counsel-projectile counsel-css company-web company-tern company-statistics company-lua company-ghci company-cabal company-anaconda column-enforce-mode color-theme-sanityinc-solarized cmm-mode clean-aindent-mode centered-cursor-mode cargo calfw-org calfw browse-at-remote auto-yasnippet auto-highlight-symbol auto-dictionary auto-compile aggressive-indent ace-link ac-ispell))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
