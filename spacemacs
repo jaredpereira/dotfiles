@@ -449,9 +449,12 @@ you should place your code here."
        "* TODO %^{title}
   CREATED: %u
   %?")
-      ("j" "journal" plain
+      ("j" "journal" entry 
        (file+olp+datetree "~/org/journal.org" )
-       "    - %U: %?")
+       "* %^{title}
+  :TIME: %U
+  %?")
+
       ("i" "idea" entry
        (file+headline "~/org/notes/ideas.org" "Ideas")
        "* %?")
