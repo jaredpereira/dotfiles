@@ -52,6 +52,8 @@ values."
      ;; better-defaults
      emacs-lisp
      git
+     mu4e
+     notmuch
      neotree
      (org :variables
           org-enable-reveal-js-support t)
@@ -66,23 +68,25 @@ values."
                        version-control-diff-tool 'git-gutter+
                        version-control-diff-side 'left
                        version-control-global-margin t)
-     (wakatime :variables
-               wakatime-api-key "7812a069-01b4-4a33-9549-49f6e3f37b73"
-               wakatime-cli-path "/usr/bin/wakatime")
      )
    ;; List of additional packages that will be installed without being
    ;; wrapped in a layer. If you need some configuration for these
    ;; packages, then consider creating a layer. You can also put the
    ;; configuration in `dotspacemacs/user-config'.
    dotspacemacs-additional-packages '(
+                                      deft
                                       forge
+                                      all-the-icons
+                                      mu4e-conversation
                                       org-super-agenda
                                       solaire-mode
                                       doom-themes
                                       writeroom-mode
                                       keychain-environment
                                       nov
+                                      graphql-mode
                                       docker-tramp
+                                      company-flx
                                       solidity-mode)
    ;; A list of packages that cannot be updated.
    dotspacemacs-frozen-packages '()
@@ -342,6 +346,13 @@ values."
   (setq typescript-indent-level n)
   )
 
+(defun insert-file-name-from-project (filename &optional args)
+  (interactive "P")
+  (let* ((project-root (projectile-ensure-project (projectile-project-root)))
+         (file (projectile-completing-read "Find file: "
+                                           (projectile-project-files project-root))))
+    (funcall #'insert (file-relative-name (expand-file-name file project-root)))
+    ))
 
 (defun dotspacemacs/user-init ()
   "Initialization function for user code.
@@ -352,7 +363,6 @@ before packages are loaded. If you are unsure, you should try in setting them in
 `dotspacemacs/user-config' first."
 
   (my-setup-indent 2)
-
   )
 
 (defun dotspacemacs/user-config ()
@@ -363,9 +373,36 @@ This is the place where most of your configurations should be done. Unless it is
 explicitly specified that a variable should be set before a package is loaded,
 you should place your code here."
   (require 'forge)
+  (setq ivy-re-builders-alist '((t . ivy--regex-fuzzy)))
+
+  (global-set-key (kbd "C-c i") 'insert-file-name-from-project)
+  (define-key evil-normal-state-map
+    "\C-f" 'projectile-find-file)
+
+  ;; Deft mode config
+  (setq deft-directory "~/dev/homepage/pages")
+  (setq deft-recursive t)
+
+  ;;Neotree Configuration
+  (setq neo-theme (if (display-graphic-p) 'icons 'arrow))
+  (defun neotree-resize-window (&rest _args)
+    "Resize neotree window.
+https://github.com/jaypei/emacs-neotree/pull/110"
+    (interactive)
+    (neo-buffer--with-resizable-window
+     (let ((fit-window-to-buffer-horizontally t))
+       (fit-window-to-buffer))))
+
+  (add-hook 'neo-change-root-hook #'neotree-resize-window)
+  (add-hook 'neo-enter-hook #'neotree-resize-window)
+
+  ;; Find file functionjjkkjl
+
+  ;;Set title to use for window tracking
+  (setq frame-title-format "%f")
 
   (add-to-list 'auto-mode-alist '("\\.mdx\\'" . markdown-mode))
-  (global-wakatime-mode)
+  (add-to-list 'auto-mode-alist '("\\.gql\\'" . graphql-mode))
   (global-linum-mode -1)
   (global-display-line-numbers-mode)
   (global-company-mode)
@@ -386,15 +423,35 @@ you should place your code here."
   (spaceline-toggle-org-clock-on)
   (setq display-line-numbers-width-start t)
 
+  ;; MAIL
+  (setq mail-user-agent 'mu4e-user-agent)
+  (setq mu4e-maildir "~/mail")
+  (setq mu4e-sent-folder "/Sent")
+  (setq mu4e-drafts-folder "/Drafts")
+  (setq mu4e-trash-folder "/Trash")
+
+  (setq mu4e-get-mail-command "offlineimap")
+  (setq user-mail-address "jared@awarm.space"
+        user-full-name "Jared Pereira")
+  (with-eval-after-load 'mu4e (require 'mu4e-conversation))
+
+  (require 'smtpmail)
+
+  (setq message-send-mail-function 'smtpmail-send-it)
+  (setq smtpmail-stream-type 'starttls)
+  (setq smtpmail-smtp-server "smtp.migadu.com")
+  (setq smtpmail-smtp-service 587)
+
   ;; Org Config
   (require 'org-habit)
   (require 'ox-md)
 
+  (setq org-link-file-path-type 'relative)
   (setcar (nthcdr 4 org-emphasis-regexp-components) 5)
   (org-set-emph-re 'org-emphasis-regexp-components org-emphasis-regexp-components)
 
   ;; Load notes file so it's always accessible
-  (find-file-noselect "~/org/notes/")
+  (find-file-noselect "~/dev/homepage/pages/notes/")
   (find-file-noselect "~/dev/homepage/")
 
   (setq org-agenda-files( list "~/org" "~/org/notes" "~/org/writing" "~/org/readings"))
@@ -429,13 +486,17 @@ you should place your code here."
                   :habit t
                   :tag "habit"
                   )
+           (:name "Fathom"
+                  :tag "fathom")
+           (:name "Learning"
+                  :tag "learning")
            (:name "Writing"
                   :tag "writing"
                   )
-           (:name "Fathom"
-                  :tag "fathom")
            (:name "Personal"
                   :tag "personal")
+           (:name "Side Projects"
+                  :tag "sideproject")
            ))
 
 
@@ -445,7 +506,7 @@ you should place your code here."
        (file+headline "~/org/links.org" "Buffer")
        "* [[%^{url}][%^{title}]]")
       ("t" "task" entry
-       (file+headline "~/org/tasks.org" "Buffer")
+       (file "~/org/tasks.org")
        "* TODO %^{title}
   CREATED: %u
   %?")
@@ -478,7 +539,8 @@ This function is called at the very end of Spacemacs initialization."
     ("/usr/local/sbin" "/usr/local/bin" "/usr/bin" "/usr/lib/jvm/default/bin" "/usr/bin/site_perl" "/usr/bin/vendor_perl" "/usr/bin/core_perl" "/usr/lib/emacs/26.1/x86_64-pc-linux-gnu" "/home/jared/.npm-global/bin" "/home/jared/.gem/ruby/2.5.0/bin" "~/.local/bin" "~/.cargo/bin")))
  '(package-selected-packages
    (quote
-    (systemd org-caldav yasnippet-snippets yapfify yaml-mode xterm-color ws-butler writeroom-mode winum which-key wgrep web-mode web-beautify wakatime-mode volatile-highlights vmd-mode vi-tilde-fringe uuidgen use-package treemacs-projectile treemacs-evil toml-mode toc-org tide tagedit symon string-inflection spaceline-all-the-icons solidity-mode solaire-mode smex smeargle slim-mode shell-pop scss-mode sass-mode rjsx-mode restart-emacs rainbow-delimiters racer pyvenv pytest pyenv-mode py-isort pug-mode prettier-js popwin pippel pipenv pip-requirements pcre2el password-generator paradox ox-reveal overseer orgit org-projectile org-present org-pomodoro org-mime org-gcal org-download org-bullets org-brain open-junk-file nameless multi-term move-text mmm-mode markdown-toc magit-svn magit-gitflow macrostep lorem-ipsum livid-mode live-py-mode link-hint keychain-environment json-navigator json-mode js2-refactor js-doc ivy-yasnippet ivy-xref ivy-purpose ivy-hydra indent-guide importmagic impatient-mode hungry-delete hlint-refactor hl-todo hindent highlight-parentheses highlight-numbers highlight-indentation helm-make haskell-snippets google-translate golden-ratio gnuplot gitignore-templates gitignore-mode gitconfig-mode gitattributes-mode git-timemachine git-messenger git-link git-gutter-fringe git-gutter-fringe+ gh-md fuzzy font-lock+ flyspell-correct-ivy flycheck-rust flycheck-pos-tip flycheck-haskell flx-ido fill-column-indicator fancy-battery eyebrowse expand-region evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-surround evil-org evil-numbers evil-nerd-commenter evil-matchit evil-magit evil-lisp-state evil-lion evil-indent-plus evil-iedit-state evil-goggles evil-exchange evil-escape evil-ediff evil-cleverparens evil-args evil-anzu eval-sexp-fu eshell-z eshell-prompt-extras esh-help emmet-mode elisp-slime-nav editorconfig dumb-jump dotenv-mode doom-themes doom-modeline diminish diff-hl define-word cython-mode csv-mode counsel-projectile counsel-css company-web company-tern company-statistics company-lua company-ghci company-cabal company-anaconda column-enforce-mode color-theme-sanityinc-solarized cmm-mode clean-aindent-mode centered-cursor-mode cargo calfw-org calfw browse-at-remote auto-yasnippet auto-highlight-symbol auto-dictionary auto-compile aggressive-indent ace-link ac-ispell))))
+    (deft mu4e-conversation counsel-notmuch notmuch mu4e-maildirs-extension mu4e-alert systemd org-caldav yasnippet-snippets yapfify yaml-mode xterm-color ws-butler writeroom-mode winum which-key wgrep web-mode web-beautify wakatime-mode volatile-highlights vmd-mode vi-tilde-fringe uuidgen use-package treemacs-projectile treemacs-evil toml-mode toc-org tide tagedit symon string-inflection spaceline-all-the-icons solidity-mode solaire-mode smex smeargle slim-mode shell-pop scss-mode sass-mode rjsx-mode restart-emacs rainbow-delimiters racer pyvenv pytest pyenv-mode py-isort pug-mode prettier-js popwin pippel pipenv pip-requirements pcre2el password-generator paradox ox-reveal overseer orgit org-projectile org-present org-pomodoro org-mime org-gcal org-download org-bullets org-brain open-junk-file nameless multi-term move-text mmm-mode markdown-toc magit-svn magit-gitflow macrostep lorem-ipsum livid-mode live-py-mode link-hint keychain-environment json-navigator json-mode js2-refactor js-doc ivy-yasnippet ivy-xref ivy-purpose ivy-hydra indent-guide importmagic impatient-mode hungry-delete hlint-refactor hl-todo hindent highlight-parentheses highlight-numbers highlight-indentation helm-make haskell-snippets google-translate golden-ratio gnuplot gitignore-templates gitignore-mode gitconfig-mode gitattributes-mode git-timemachine git-messenger git-link git-gutter-fringe git-gutter-fringe+ gh-md fuzzy font-lock+ flyspell-correct-ivy flycheck-rust flycheck-pos-tip flycheck-haskell flx-ido fill-column-indicator fancy-battery eyebrowse expand-region evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-surround evil-org evil-numbers evil-nerd-commenter evil-matchit evil-magit evil-lisp-state evil-lion evil-indent-plus evil-iedit-state evil-goggles evil-exchange evil-escape evil-ediff evil-cleverparens evil-args evil-anzu eval-sexp-fu eshell-z eshell-prompt-extras esh-help emmet-mode elisp-slime-nav editorconfig dumb-jump dotenv-mode doom-themes doom-modeline diminish diff-hl define-word cython-mode csv-mode counsel-projectile counsel-css company-web company-tern company-statistics company-lua company-ghci company-cabal company-anaconda column-enforce-mode color-theme-sanityinc-solarized cmm-mode clean-aindent-mode centered-cursor-mode cargo calfw-org calfw browse-at-remote auto-yasnippet auto-highlight-symbol auto-dictionary auto-compile aggressive-indent ace-link ac-ispell)))
+ '(send-mail-function (quote smtpmail-send-it)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
