@@ -16,24 +16,25 @@ set $mod Mod4
 font pango:monospace 8
 
 # No titlebar
-new_window 1pixel 
+new_window 1pixel
 hide_edge_borders both
 
 # Set background color
 exec --no-startup-id feh --bg-scale ~/media/Images/wallpaper.png
 exec --no-startup-id nm-applet
-exec --no-startup-id redshift
-exec --no-startup-id volumeicon
 exec --no-startup-id udiskie
-exec --no-startup-id emacs --daemon &
-exec --no-startup-id syncthing
+exec --no-startup-id dunst
+exec --no-startup-id redshift
+exec --no-startup-id pasystray
+exec --no-startup-id syncthing -no-browser
+exec --no-startup-id blueman-applet
 
 # Touchpad Settings
 exec --no-startup-id xinput set-prop 12 "libinput Disable While Typing Enabled" 0
 
 # Pulse Audio controls
-bindsym XF86AudioRaiseVolume exec --no-startup-id pactl set-sink-volume $( pactl info | grep Sink | cut -c15- ) +3% #increase sound volume
-bindsym XF86AudioLowerVolume exec --no-startup-id pactl set-sink-volume $( pactl info | grep Sink | cut -c15- ) -3% #decrease sound volume
+bindsym XF86AudioRaiseVolume exec --no-startup-id amixer -D pulse sset Master 5%+
+bindsym XF86AudioLowerVolume exec --no-startup-id amixer -D pulse sset Master 5%-
 bindsym XF86AudioMute exec --no-startup-id pactl set-sink-mute $( pactl info | grep Sink | cut -c15- ) toggle # mute sound
 
 # Screen brightness controls
@@ -43,9 +44,8 @@ bindsym XF86MonBrightnessDown exec xbacklight -dec 5 # increase screen brightnes
 bindsym XF86TouchpadToggle exec /some/path/toggletouchpad.sh # toggle touchpad
 
 # Media player controls
-bindsym XF86AudioPlay exec playerctl play
-bindsym XF86AudioPause exec playerctl pause
-bindsym XF86AudioNext exec playerctl next
+bindsym XF86AudioPlay exec --no-startup-id dbus-send --print-reply --dest=org.mpris.MediaPlayer2.spotify /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.PlayPause
+bindsym XF86AudioNext exec --no-startup-id dbus-send --print-reply --dest=org.mpris.MediaPlayer2.spotify /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.Next
 bindsym XF86AudioPrev exec playerctl previous
 
 # This font is widely installed, provides lots of unicode glyphs, right-to-left
@@ -66,13 +66,23 @@ floating_modifier $mod
 for_window [class = "chromium" window_role="popup"] floatin enable
 
 # start a terminal
-bindsym $mod+Return exec i3-sensible-terminal
+bindsym $mod+Return exec termite
 
-# lock the screen
-bindsym $mod+Delete exec i3lock -i ~/media/Images/wallpaper.png 
+# take a screenshot
+bindsym $mod+Shift+s exec scrot -s -e 'mv $f ~/media/Images/screenshots/'
+
+# run edc script
+bindsym $mod+Shift+i exec ~/scripts/edc
 
 # Suspend laptop
-bindsym $mod+Shift+s exec i3lock -i ~/media/Images/wallpaper.png && systemctl suspend
+bindsym $mod+Delete exec i3lock -i ~/media/Images/wallpaper.png && systemctl suspend
+
+# go mobile
+bindsym $mod+Shift+m exec autorandr mobile
+
+# Move workspaces
+
+bindsym $mod+Shift+w [workspace="^(6|7|8|9)"] move workspace to output DP-1
 
 # kill focused window
 bindsym $mod+Shift+q kill
@@ -173,16 +183,16 @@ mode "resize" {
         # Pressing right will grow the window’s width.
         # Pressing up will shrink the window’s height.
         # Pressing down will grow the window’s height.
-        bindsym l resize shrink width 10 px or 10 ppt
-        bindsym j resize grow height 10 px or 10 ppt
-        bindsym k resize shrink height 10 px or 10 ppt
-        bindsym h resize grow width 10 px or 10 ppt
+        bindsym l resize shrink width 5 px or 5 ppt
+        bindsym j resize grow height 5 px or 5 ppt
+        bindsym k resize shrink height 5 px or 5 ppt
+        bindsym h resize grow width 5 px or 5 ppt
 
         # same bindings, but for the arrow keys
-        bindsym Left resize shrink width 10 px or 10 ppt
-        bindsym Down resize grow height 10 px or 10 ppt
-        bindsym Up resize shrink height 10 px or 10 ppt
-        bindsym Right resize grow width 10 px or 10 ppt
+        bindsym Left resize shrink width 5 px or 5 ppt
+        bindsym Down resize grow height 5 px or 5 ppt
+        bindsym Up resize shrink height 5 px or 5 ppt
+        bindsym Right resize grow width 5 px or 5 ppt
 
         # back to normal: Enter or Escape
         bindsym Return mode "default"
