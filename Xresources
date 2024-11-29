@@ -2,7 +2,10 @@
 URxvt*buffered: true
 URxvt*cursorBlink: true
 URxvt*underlineColor: yellow
-URxvt.font:  xft:Inconsolata:antialias=true Powerline:size=12, Noto Fonts Emoji 
+
+URxvt.font:         xft:Hack-Regular:pixelsize=14,xft:Symbola
+URxvt.boldFont:     xft:Hack-Bold:pixelsize=14:weight=bold,xft:Symbola
+URxvt.italicFont:   xft:Hack-RegularOblique:pixelsize=14:slant=italic,xft:Symbola
 URxvt*depth: 32
 URxvt*borderless: 1
 URxvt*scrollBar: false

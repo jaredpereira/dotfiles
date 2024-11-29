@@ -11,42 +11,67 @@
 
 set $mod Mod4
 
+# gaps vertical 384
+# gaps horizontal 256
+# ----
+# gaps horizontal 500
+# gaps vertical 32
+# ---
+gaps inner 16 
+gaps outer 16
+gaps bottom 0
+
 # Font for window titles. Will also be used by the bar unless a different font
 # is used in the bar {} block below.
 font pango:monospace 8
 
 # No titlebar
 new_window 1pixel
-hide_edge_borders both
+default_border pixel 1
 
 # Set background color
-exec --no-startup-id feh --bg-scale ~/media/Images/wallpaper.png
+exec --no-startup-id picom -b
+exec --no-startup-id polybar -r --config=./dotfiles/polybar example
+exec --no-startup-id feh --bg-tile ~/media/Images/tiled-islands-medium.png
 exec --no-startup-id nm-applet
 exec --no-startup-id udiskie
 exec --no-startup-id dunst
-exec --no-startup-id redshift
+exec --no-startup-id /usr/lib/kdeconnectd
+exec --no-startup-id redshift -l 40.68344:-73.94125
 exec --no-startup-id pasystray
 exec --no-startup-id syncthing -no-browser
 exec --no-startup-id blueman-applet
+exec --no-startup-id playerctld daemon
 
 # Touchpad Settings
 exec --no-startup-id xinput set-prop 12 "libinput Disable While Typing Enabled" 0
 
 # Pulse Audio controls
-bindsym XF86AudioRaiseVolume exec --no-startup-id amixer -D pulse sset Master 5%+
-bindsym XF86AudioLowerVolume exec --no-startup-id amixer -D pulse sset Master 5%-
+bindsym XF86AudioRaiseVolume exec --no-startup-id pactl list sinks | grep "Sink #" | cut -c 7- | xargs -I %id pactl set-sink-volume %id +2%
+bindsym XF86AudioLowerVolume exec --no-startup-id pactl list sinks | grep "Sink #" | cut -c 7- | xargs -I %id pactl set-sink-volume %id -2%
 bindsym XF86AudioMute exec --no-startup-id pactl set-sink-mute $( pactl info | grep Sink | cut -c15- ) toggle # mute sound
 
 # Screen brightness controls
 bindsym XF86MonBrightnessUp exec xbacklight -inc 5 # increase screen brightness
-bindsym XF86MonBrightnessDown exec xbacklight -dec 5 # increase screen brightness
+bindsym XF86MonBrightnessDown exec xbacklight -dec 5 # decrease screen brightness
 # Touchpad controls
 bindsym XF86TouchpadToggle exec /some/path/toggletouchpad.sh # toggle touchpad
 
 # Media player controls
-bindsym XF86AudioPlay exec --no-startup-id dbus-send --print-reply --dest=org.mpris.MediaPlayer2.spotify /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.PlayPause
-bindsym XF86AudioNext exec --no-startup-id dbus-send --print-reply --dest=org.mpris.MediaPlayer2.spotify /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.Next
-bindsym XF86AudioPrev exec playerctl previous
+bindsym XF86AudioPause exec --no-startup-id playerctl play-pause 
+bindsym XF86AudioPlay exec --no-startup-id playerctl play-pause
+bindsym XF86AudioNext exec --no-startup-id playerctl next
+bindsym XF86AudioPrev exec --no-startup-id playerctl previous
+
+## Fancynote
+for_window [ title="emacs-fancynote" ] floating enable
+
+# scratchpad
+# Make the currently focused window a scratchpad
+bindsym $mod+Shift+minus move scratchpad
+
+# Show the first scratchpad window
+bindsym $mod+minus scratchpad show
 
 # This font is widely installed, provides lots of unicode glyphs, right-to-left
 # text rendering and scalability on retina/hidpi displays (thanks to pango).
@@ -66,23 +91,30 @@ floating_modifier $mod
 for_window [class = "chromium" window_role="popup"] floatin enable
 
 # start a terminal
-bindsym $mod+Return exec termite
+bindsym $mod+Return exec kitty
 
-# take a screenshot
-bindsym $mod+Shift+s exec scrot -s -e 'mv $f ~/media/Images/screenshots/'
+bindsym $mod+i exec ~/scripts/popup.sh
+
+for_window [title="scratchpad-dropdown-123"] floating enable, border pixel 2, resize set 800 600, \
+    move scratchpad
+
+# Add a new note
+bindsym $mod+f exec note
 
 # run edc script
 bindsym $mod+Shift+i exec ~/scripts/edc
 
 # Suspend laptop
-bindsym $mod+Delete exec i3lock -i ~/media/Images/wallpaper.png && systemctl suspend
+bindsym $mod+Delete exec ~/scripts/lock -i ~/media/Images/wallpaper.png
+bindsym $mod+Tab exec autorandr docked
+bindsym $mod+Shift+Tab exec autorandr mobile
 
 # go mobile
 bindsym $mod+Shift+m exec autorandr mobile
 
 # Move workspaces
 
-bindsym $mod+Shift+w [workspace="^(6|7|8|9)"] move workspace to output DP-1
+bindsym $mod+Shift+w [workspace="^(6|7|8|9)"] move workspace to output DP-2
 
 # kill focused window
 bindsym $mod+Shift+q kill
@@ -112,6 +144,12 @@ bindsym $mod+Shift+j move down
 bindsym $mod+Shift+k move up
 bindsym $mod+Shift+l move right
 
+# move focused workspace
+bindsym $mod+Shift+Ctrl+h move workspace to output left
+bindsym $mod+Shift+Ctrl+j move workspace to output down
+bindsym $mod+Shift+Ctrl+k move workspace to output up
+bindsym $mod+Shift+Ctrl+l move workspace to output right
+
 # alternatively, you can use the cursor keys:
 bindsym $mod+Shift+Left move left
 bindsym $mod+Shift+Down move down
@@ -125,7 +163,7 @@ bindsym $mod+z split h
 bindsym $mod+v split v
 
 # enter fullscreen mode for the focused container
-bindsym $mod+f fullscreen toggle
+bindsym $mod+Shift+f fullscreen toggle
 
 # change container layout (stacked, tabbed, toggle split)
 bindsym $mod+s layout stacking
@@ -203,6 +241,12 @@ bindsym $mod+r mode "resize"
 
 # Start i3bar to display a workspace bar (plus the system information i3status
 # finds out, if available)
-bar {
-        status_command i3status
-}
+# bar {
+#   tray_output none
+#   colors {
+#     background #FFFFFFDD
+#     statusline #000000
+#   }
+#   i3bar_command i3bar --transparency
+#   status_command i3status
+# }
