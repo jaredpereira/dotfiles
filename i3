@@ -17,9 +17,9 @@ set $mod Mod4
 # gaps horizontal 500
 # gaps vertical 32
 # ---
-gaps inner 16 
-gaps outer 16
-gaps bottom 0
+ gaps inner 16 
+ gaps outer 16
+ gaps bottom 0
 
 # Font for window titles. Will also be used by the bar unless a different font
 # is used in the bar {} block below.
@@ -27,24 +27,25 @@ font pango:monospace 8
 
 # No titlebar
 new_window 1pixel
-default_border pixel 1
+default_border pixel 0
 
 # Set background color
 exec --no-startup-id picom -b
+exec --no-startup-id touchegg
 exec --no-startup-id polybar -r --config=./dotfiles/polybar example
 exec --no-startup-id feh --bg-tile ~/media/Images/tiled-islands-medium.png
 exec --no-startup-id nm-applet
-exec --no-startup-id udiskie
-exec --no-startup-id dunst
-exec --no-startup-id /usr/lib/kdeconnectd
-exec --no-startup-id redshift -l 40.68344:-73.94125
-exec --no-startup-id pasystray
-exec --no-startup-id syncthing -no-browser
-exec --no-startup-id blueman-applet
-exec --no-startup-id playerctld daemon
+#exec --no-startup-id udiskie
+#exec --no-startup-id dunst
+#exec --no-startup-id /usr/lib/kdeconnectd
+#exec --no-startup-id redshift -l 40.68344:-73.94125
+#exec --no-startup-id pasystray
+#exec --no-startup-id syncthing -no-browser
+#exec --no-startup-id blueman-applet
+#exec --no-startup-id playerctld daemon
 
 # Touchpad Settings
-exec --no-startup-id xinput set-prop 12 "libinput Disable While Typing Enabled" 0
+#exec --no-startup-id xinput set-prop 12 "libinput Disable While Typing Enabled" 0
 
 # Pulse Audio controls
 bindsym XF86AudioRaiseVolume exec --no-startup-id pactl list sinks | grep "Sink #" | cut -c 7- | xargs -I %id pactl set-sink-volume %id +2%
@@ -52,10 +53,10 @@ bindsym XF86AudioLowerVolume exec --no-startup-id pactl list sinks | grep "Sink 
 bindsym XF86AudioMute exec --no-startup-id pactl set-sink-mute $( pactl info | grep Sink | cut -c15- ) toggle # mute sound
 
 # Screen brightness controls
-bindsym XF86MonBrightnessUp exec xbacklight -inc 5 # increase screen brightness
-bindsym XF86MonBrightnessDown exec xbacklight -dec 5 # decrease screen brightness
+bindsym XF86MonBrightnessUp exec brightnessctl s +5% # increase screen brightness
+bindsym XF86MonBrightnessDown exec brightnessctl s 5%- # decrease screen brightness
 # Touchpad controls
-bindsym XF86TouchpadToggle exec /some/path/toggletouchpad.sh # toggle touchpad
+# bindsym XF86TouchpadToggle exec /some/path/toggletouchpad.sh # toggle touchpad
 
 # Media player controls
 bindsym XF86AudioPause exec --no-startup-id playerctl play-pause 
@@ -63,15 +64,12 @@ bindsym XF86AudioPlay exec --no-startup-id playerctl play-pause
 bindsym XF86AudioNext exec --no-startup-id playerctl next
 bindsym XF86AudioPrev exec --no-startup-id playerctl previous
 
-## Fancynote
-for_window [ title="emacs-fancynote" ] floating enable
-
 # scratchpad
 # Make the currently focused window a scratchpad
-bindsym $mod+Shift+minus move scratchpad
+#bindsym $mod+Shift+minus move scratchpad
 
 # Show the first scratchpad window
-bindsym $mod+minus scratchpad show
+#bindsym $mod+minus scratchpad show
 
 # This font is widely installed, provides lots of unicode glyphs, right-to-left
 # text rendering and scalability on retina/hidpi displays (thanks to pango).
@@ -86,9 +84,6 @@ bindsym $mod+minus scratchpad show
 
 # Use Mouse+$mod to drag floating windows to their wanted position
 floating_modifier $mod
-
-# make popups float?
-for_window [class = "chromium" window_role="popup"] floatin enable
 
 # start a terminal
 bindsym $mod+Return exec kitty

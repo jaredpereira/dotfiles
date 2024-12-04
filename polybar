@@ -30,9 +30,10 @@ alert = #e60053bd2c40
 
 [bar/example]
 ;monitor = ${env:MONITOR:HDMI-1}
+dpi = ${xrdb:Xft.dpi:-1}
 bottom = true
 width = 100%:
-height = 28
+height = 32
 ;offset-x = 2%
 radius = 8.0
 fixed-center = false
@@ -59,8 +60,8 @@ font-1 = unifont:fontformat=truetype:size=8:antialias=false;0
 font-2 = siji:pixelsize=10;2
 
 modules-left = i3 
-modules-center = 
-modules-right = battery-combined-shell wlan filesystem memory date 
+modules-center = tray
+modules-right = battery wlan filesystem memory date 
 
 tray-position = center
 tray-padding = 4
@@ -82,6 +83,12 @@ tray-padding = 4
 
 cursor-click = pointer
 cursor-scroll = ns-resize
+
+[module/tray]
+type = internal/tray
+
+format-margin = 8px
+tray-spacing = 8px
 
 [module/xwindow]
 type = internal/xwindow
@@ -291,11 +298,6 @@ bar-volume-fill-font = 2
 bar-volume-empty = ─
 bar-volume-empty-font = 2
 bar-volume-empty-foreground = ${colors.foreground-alt}
-
-[module/battery-combined-shell]
-type = custom/script
-exec = ~/dotfiles/battery.sh
-interval = 10
 
 [module/battery]
 type = internal/battery
